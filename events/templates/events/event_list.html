@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% load custom_filters %}
+
+{% block content %}
+<div class="form-container">
+    <form method="get">
+        <input type="text" name="q" placeholder="Szukaj..." value="{{ request.GET.q }}">
+        <input type="submit" value="Szukaj">
+    </form>
+
+    <form method="get">
+		<label for="to_date">Od:</label>
+        <input type="date" id="from_date" name="from_date">
+
+
+        <label for="to_date">&nbsp;Do:</label>
+        <input type="date" id="to_date" name="to_date">
+
+
+        <button type="submit">Filtruj</button>
+    </form>
+</div>
+
+
+  <table>
+    <thead>
+      <tr style="background-color: #ccc">
+        <th class="event-column-name">Nazwa</th>
+		<th>Nr. Protokołu</th>
+        <th>Rozpoczecie</th>
+		<th>Zakończenie</th>
+        <th>Miejsce</th>
+        <th>Sprzedawca</th>
+		<th>PM</th>
+        <th>Pozostałe info</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for event in events %}
+        
+
+
+		<tr style="background-image: linear-gradient({{ event.seller|generate_color }}, {{ event.seller|generate_color }}), linear-gradient(white, white); background-blend-mode: multiply;">
+          <td>{{ event.name }}</td>
+		  <td style="text-align: center">{{ event.protocol_number }}</td>
+          <td style="text-align: center">{{ event.start_time|date:"d.m.Y" }}</td>
+		  <td style="text-align: center">{{ event.end_time|date:"d.m.Y"|default:"-" }}</td>
+          <td>{{ event.place }}</td>
+          <td>{{ event.seller.first_name }} {{ event.seller.last_name }}</td>
+		  <td>        
+			  {% for pm in event.project_managers.all %}
+				{{ pm.first_name }} {{ pm.last_name }}
+				{% if not forloop.last %}, {% endif %}
+			  {% endfor %}
+</td>
+          <td style="text-align: center"><a href="{% url 'events:event_detail' event.id %}">Dodatkowe info</a></td>
+        </tr>
+   	    
+      {% endfor %}
+    </tbody>
+  </table>
+
+<div class="pagination">
+    <span class="step-links">
+        {% if events.has_previous %}
+            <a href="?q={{ request.GET.q }}&from_date={{ request.GET.from_date }}&to_date={{ request.GET.to_date }}&page=1">&laquo; Pierwsza</a>
+            <a href="?q={{ request.GET.q }}&from_date={{ request.GET.from_date }}&to_date={{ request.GET.to_date }}&page={{ events.previous_page_number }}">Poprzednia</a>
+        {% endif %}
+
+        <span class="current">
+            Strona {{ events.number }} z {{ events.paginator.num_pages }}.
+        </span>
+
+        {% if events.has_next %}
+            <a href="?q={{ request.GET.q }}&from_date={{ request.GET.from_date }}&to_date={{ request.GET.to_date }}&page={{ events.next_page_number }}">Następna</a>
+            <a href="?q={{ request.GET.q }}&from_date={{ request.GET.from_date }}&to_date={{ request.GET.to_date }}&page={{ events.paginator.num_pages }}">Ostatnia &raquo;</a>
+        {% endif %}
+    </span>
+</div>
+
+{% endblock %}
