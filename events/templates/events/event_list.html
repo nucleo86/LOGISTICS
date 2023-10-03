@@ -1,82 +1,103 @@
-{% extends "base.html" %}
-
-{% load custom_filters %}
+{% extends 'base.html' %}
 
 {% block content %}
-<div class="form-container">
-    <form method="get">
-        <input type="text" name="q" placeholder="Szukaj..." value="{{ request.GET.q }}">
-        <input type="submit" value="Szukaj">
+
+<div class="container-fluid" style="margin-top: -20px">
+
+<div class="form-container mt-4 text-center">
+    <form class="d-inline-block me-4" method="get">
+        <div class="input-group">
+            <input type="text" class="form-control" name="q" placeholder="Szukaj..." value="{{ request.GET.q }}">
+            <button class="btn btn-primary" type="submit">Szukaj</button>
+        </div>
     </form>
 
-    <form method="get">
-		<label for="to_date">Od:</label>
-        <input type="date" id="from_date" name="from_date">
-
-
-        <label for="to_date">&nbsp;Do:</label>
-        <input type="date" id="to_date" name="to_date">
-
-
-        <button type="submit">Filtruj</button>
+    <form class="d-inline-block" method="get">
+        <div class="input-group">
+            <label for="from_date" class="input-group-text">Od:</label>
+            <input type="date" class="form-control" id="from_date" name="from_date">
+            <label for="to_date" class="input-group-text">Do:</label>
+            <input type="date" class="form-control" id="to_date" name="to_date">
+            <button class="btn btn-secondary" type="submit">Filtruj</button>
+        </div>
     </form>
 </div>
 
 
-  <table>
-    <thead>
-      <tr style="background-color: #ccc">
-        <th class="event-column-name">Nazwa</th>
-		<th>Nr. Protokołu</th>
-        <th>Rozpoczecie</th>
-		<th>Zakończenie</th>
-        <th>Miejsce</th>
-        <th>Sprzedawca</th>
-		<th>PM</th>
-        <th>Pozostałe info</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for event in events %}
-        
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    Lista wydarzeń
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nazwa</th>
+                                <th>Data</th>
+                                <th>Miejsce</th>
+                                <th>Sprzedawca</th>
+                                <!--<th>Szczegóły</th>-->
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for event in events %}
+                            <tr>
+                                <td><a href="{% url 'events:event_detail' event.id %}">{{ event.name }}</a></td>
+                                <td>{{ event.start_time|date:"d.m.Y" }} - {{ event.end_time|date:"d.m.Y"|default:"" }}</td>
+                                <td>{{ event.place }}</td>
+                                <td><a href="{% url 'events:employee_detail' event.seller.id %}">{{ event.seller.first_name }} {{ event.seller.last_name }}</a></td>
+                                <!--<td>
+                                    <a href="{% url 'events:event_detail' event.id %}" class="btn btn-sm btn-primary">Szczegóły</a>
+                                </td>-->
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+					
+					
+				<div class="d-flex justify-content-center">
+					<nav aria-label="Page navigation">
+                        <ul class="pagination">
+                            {% if events.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?q={{ request.GET.q }}&from_date={{ request.GET.from_date }}&to_date={{ request.GET.to_date }}&page=1" aria-label="First">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?q={{ request.GET.q }}&from_date={{ request.GET.from_date }}&to_date={{ request.GET.to_date }}&page={{ events.previous_page_number }}" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            {% endif %}
 
+                            <li class="page-item disabled">
+                                <span class="page-link">Strona {{ events.number }} z {{ events.paginator.num_pages }}</span>
+                            </li>
 
-		<tr style="background-image: linear-gradient({{ event.seller|generate_color }}, {{ event.seller|generate_color }}), linear-gradient(white, white); background-blend-mode: multiply;">
-          <td>{{ event.name }}</td>
-		  <td style="text-align: center">{{ event.protocol_number }}</td>
-          <td style="text-align: center">{{ event.start_time|date:"d.m.Y" }}</td>
-		  <td style="text-align: center">{{ event.end_time|date:"d.m.Y"|default:"-" }}</td>
-          <td>{{ event.place }}</td>
-          <td>{{ event.seller.first_name }} {{ event.seller.last_name }}</td>
-		  <td>        
-			  {% for pm in event.project_managers.all %}
-				{{ pm.first_name }} {{ pm.last_name }}
-				{% if not forloop.last %}, {% endif %}
-			  {% endfor %}
-</td>
-          <td style="text-align: center"><a href="{% url 'events:event_detail' event.id %}">Dodatkowe info</a></td>
-        </tr>
-   	    
-      {% endfor %}
-    </tbody>
-  </table>
-
-<div class="pagination">
-    <span class="step-links">
-        {% if events.has_previous %}
-            <a href="?q={{ request.GET.q }}&from_date={{ request.GET.from_date }}&to_date={{ request.GET.to_date }}&page=1">&laquo; Pierwsza</a>
-            <a href="?q={{ request.GET.q }}&from_date={{ request.GET.from_date }}&to_date={{ request.GET.to_date }}&page={{ events.previous_page_number }}">Poprzednia</a>
-        {% endif %}
-
-        <span class="current">
-            Strona {{ events.number }} z {{ events.paginator.num_pages }}.
-        </span>
-
-        {% if events.has_next %}
-            <a href="?q={{ request.GET.q }}&from_date={{ request.GET.from_date }}&to_date={{ request.GET.to_date }}&page={{ events.next_page_number }}">Następna</a>
-            <a href="?q={{ request.GET.q }}&from_date={{ request.GET.from_date }}&to_date={{ request.GET.to_date }}&page={{ events.paginator.num_pages }}">Ostatnia &raquo;</a>
-        {% endif %}
-    </span>
+                            {% if events.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?q={{ request.GET.q }}&from_date={{ request.GET.from_date }}&to_date={{ request.GET.to_date }}&page={{ events.next_page_number }}" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?q={{ request.GET.q }}&from_date={{ request.GET.from_date }}&to_date={{ request.GET.to_date }}&page={{ events.paginator.num_pages }}" aria-label="Last">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+				</div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-
+	
+</div>
 {% endblock %}

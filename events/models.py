@@ -48,3 +48,12 @@ class Assignment(models.Model):
 
     def __str__(self):
         return f"{self.employee} assigned to {self.event}"
+
+class WorkShift(models.Model):
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+
+    def __str__(self):
+        return f"{self.employee} - {self.event} - {self.start_time} to {self.end_time}"

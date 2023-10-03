@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <h1 class="text-center">Lista zmian dla {{ employee.first_name }} {{ employee.last_name }}</h1>
+    <div class="text-end">
+        <a href="{% url 'events:add_work_shift' %}" class="btn btn-primary">Dodaj zmianę</a>
+    </div>
+    <table class="table table-striped mt-4">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Początek</th>
+                <th>Koniec</th>
+                <th>Event</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for shift in work_shifts %}
+            <tr>
+                <td>{{ shift.date }}</td>
+                <td>{{ shift.start_time }}</td>
+                <td>{{ shift.end_time }}</td>
+                <td>{{ shift.event.name }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

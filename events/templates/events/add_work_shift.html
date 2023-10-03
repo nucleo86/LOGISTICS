@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <h1 class="text-center">Dodaj nową zmianę</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="date" class="form-label">Data</label>
+            <input type="date" class="form-control" id="date" name="date">
+        </div>
+        <div class="mb-3">
+            <label for="start_time" class="form-label">Początek</label>
+            <input type="time" class="form-control" id="start_time" name="start_time">
+        </div>
+        <div class="mb-3">
+            <label for="end_time" class="form-label">Koniec</label>
+            <input type="time" class="form-control" id="end_time" name="end_time">
+        </div>
+        <div class="mb-3">
+            <label for="event" class="form-label">Event</label>
+            <select class="form-select" id="event" name="event">
+                {% for event in events %}
+                <option value="{{ event.id }}">{{ event.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Dodaj</button>
+    </form>
+</div>
+
+{% endblock %}

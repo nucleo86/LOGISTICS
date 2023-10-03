@@ -1,55 +1,120 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block content %}
-    <div class="container mt-5">
-        <!-- Nazwa eventu -->
-        <h1>{{ event.name }}</h1><br>
 
-        <!-- Data i miejsce -->
-        <div class="row mt-3">
+<div class="container mt-5">
+    <!-- Event Title -->
+    <h1 class="text-center">{{ event.name }}</h1><br>
 
-            <div class="col-md-6">
-                <strong>Miejsce:</strong> {{ event.place }} ({{ event.start_time|date:"d.m.Y" }} - {{ event.end_time|date:"d.m.Y" }})
+    <div class="row mb-4">
+        <!-- Table for Project Managers -->
+        {% if event.project_managers.all %}
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Project Managerowie</div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Imię i Nazwisko</th>
+                                <th>Numer Telefonu</th>
+                                <th>Email</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pm in event.project_managers.all %}
+                            <tr>
+                                <td><a href="{% url 'events:employee_detail' pm.id %}">{{ pm.first_name }} {{ pm.last_name }}</a></td>
+                                <td><a href="tel:{{ pm.phone_number }}">{{ pm.phone_number }}</a></td>
+                                <td><a href="mailto:{{ pm.e_mail }}">{{ pm.e_mail }}</a></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-<br>
-        <!-- Tabela z pracownikami -->
-        <div class="row mt-3">
-            <div class="col-12">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Imię i Nazwisko</th>
-                            <th>Specjalizacja</th>
-                            <th>Rola</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Project Manager -->
-                        {% for pm in event.project_managers.all %}
-                            <tr style="background-color: #2676D5;">
-                                <td>{{ pm.first_name }} {{ pm.last_name }}</td>
-                                <td>{{ pm.specialization }}</td>
-                                <td>Project Manager</td>
+        {% endif %}
+
+        <!-- Card for Seller -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Sprzedawca</div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Imię i Nazwisko</th>
+                                <th>Numer Telefonu</th>
+                                <th>Email</th>
                             </tr>
-                        {% endfor %}
-                        <!-- Sprzedawca -->
-                        <tr style="background-color: #5EA5CC;">
-                            <td>{{ event.seller.first_name }} {{ event.seller.last_name }}</td>
-                            <td>{{ event.seller.specialization }}</td>
-                            <td>Handlowiec</td>
-                        </tr>
-                        <!-- Pozostali pracownicy -->
-                        {% for assignment in assignments %}
-                            <tr {% if forloop.counter|divisibleby:2 %}style="background-color: #f2f2f2;"{% endif %}>
-                                <td>{{ assignment.employee.first_name }} {{ assignment.employee.last_name }}</td>
-                                <td>{{ assignment.employee.specialization }}</td>
-                                <td>Pracownik</td>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><a href="{% url 'events:employee_detail' event.seller.id %}">{{ event.seller.first_name }} {{ event.seller.last_name }}</a></td>
+                                <td><a href="tel:{{ event.seller.phone_number }}">{{ event.seller.phone_number }}</a></td>
+                                <td><a href="mailto:{{ event.seller.e_mail }}">{{ event.seller.e_mail }}</a></td>
                             </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Basic Info -->
+    <div class="card mb-4">
+        <div class="card-header">Podstawowe informacje</div>
+        <div class="card-body">
+            <table class="table">
+                <tr>
+                    <th>Data</th>
+                    <th>Nr protokołu</th>
+                    <th>Miejsce</th>
+                </tr>
+                <tr>
+                    <td>{{ event.start_time|date:"d.m.Y" }} - {{ event.end_time|date:"d.m.Y"|default:"" }}</td>
+                    <td>{{ event.protocol_number }}</td>
+                    <td>{{ event.place.name }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- Clients -->
+    <div class="card mb-4">
+        <div class="card-header">Klient</div>
+        <div class="card-body">
+            {% for client in event.clients.all %}
+            {{ client.name }}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Other Employees -->
+    <div class="card">
+        <div class="card-header">Ekipa</div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Imię i nazwisko</th>
+                        <th>Telefon</th>
+                        <th>Email</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for assignment in assignments %}
+                    <tr class="{% cycle 'table-default' 'table-secondary' %}">
+                        <td><a href="{% url 'events:employee_detail' assignment.employee.id %}">{{ assignment.employee.first_name }} {{ assignment.employee.last_name }}</a></td>
+                        <td><a href="tel:{{ assignment.employee.phone_number }}">{{ assignment.employee.phone_number }}</a></td>
+                        <td><a href="mailto:{{ assignment.employee.e_mail }}">{{ assignment.employee.e_mail }}</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
 {% endblock %}

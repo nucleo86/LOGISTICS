@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Employee Title -->
+    <!--<h1 class="text-center">{{ employee.first_name }} {{ employee.last_name }}</h1>-->
+
+    <!-- Contact Info -->
+    <div class="row mb-4">
+        <div class="col-md-12"> <!-- Zmieniono szerokość z col-md-6 na col-md-12 -->
+            <div class="card">
+                <div class="card-header">Kontakt</div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Imię i Nazwisko</th>
+                                <th>Tel</th>
+                                <th>E-mail</th>
+                                <th>Specjalizacja</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>{{ employee.first_name }} {{ employee.last_name }}</td>
+                                <td><a href="tel:{{ employee.phone_number }}">{{ employee.phone_number }}</a></td>
+                                <td><a href="mailto:{{ employee.e_mail }}">{{ employee.e_mail }}</a></td>
+                                <td>{{ employee.specialization }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Events -->
+    <div class="card mb-4">
+        <div class="card-header">Wydarzenia</div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Nazwa</th>
+                        <th>Data rozpoczęcia</th>
+                        <th>Data zakończenia</th>
+                        <th>Miejsce</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in events %}
+                    <tr class="{% cycle 'table-default' 'table-secondary' %}">
+                        <td><a href="{% url 'events:event_detail' event.id %}">{{ event.name }}</a></td>
+                        <td>{{ event.start_time|date:"d.m.Y" }}</td>
+                        <td>{{ event.end_time|date:"d.m.Y" }}</td>
+                        <td>{{ event.place.name }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

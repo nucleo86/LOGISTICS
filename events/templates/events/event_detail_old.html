@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="container mt-5">
+        <!-- Nazwa eventu -->
+        <h1>{{ event.name }}</h1><br>
+
+        <!-- Data i miejsce -->
+        <div class="row mt-3">
+
+            <div class="col-md-6">
+                <strong>Miejsce:</strong> {{ event.place }} ({{ event.start_time|date:"d.m.Y" }} - {{ event.end_time|date:"d.m.Y" }})
+            </div>
+        </div>
+<br>
+        <!-- Tabela z pracownikami -->
+        <div class="row mt-3">
+            <div class="col-12">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Imię i Nazwisko</th>
+                            <th>Specjalizacja</th>
+                            <th>Rola</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Project Manager -->
+                        {% for pm in event.project_managers.all %}
+                            <tr style="background-color: #2676D5;">
+                                <td>{{ pm.first_name }} {{ pm.last_name }}</td>
+                                <td>{{ pm.specialization }}</td>
+                                <td>Project Manager</td>
+                            </tr>
+                        {% endfor %}
+                        <!-- Sprzedawca -->
+                        <tr style="background-color: #5EA5CC;">
+                            <td>{{ event.seller.first_name }} {{ event.seller.last_name }}</td>
+                            <td>{{ event.seller.specialization }}</td>
+                            <td>Handlowiec</td>
+                        </tr>
+                        <!-- Pozostali pracownicy -->
+                        {% for assignment in assignments %}
+                            <tr {% if forloop.counter|divisibleby:2 %}style="background-color: #f2f2f2;"{% endif %}>
+                                <td>{{ assignment.employee.first_name }} {{ assignment.employee.last_name }}</td>
+                                <td>{{ assignment.employee.specialization }}</td>
+                                <td>Pracownik</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}
