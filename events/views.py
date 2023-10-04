@@ -64,17 +64,17 @@ def employee_detail(request, pk):
 
     return render(request, 'events/employee_detail.html', context)
 
-def work_shift_list(request, employee_id):
-    shifts = WorkShift.objects.filter(employee_id=employee_id).order_by('start_time')
-    return render(request, 'events/work_shift_list.html', {'shifts': shifts})
 
-def add_work_shift(request):
+def work_shift(request):
     if request.method == 'POST':
         form = WorkShiftForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('work_shift_list', employee_id=form.cleaned_data['employee'].id)
+            return redirect('work_shift')
     else:
+        events = Event.objects.all()
+        employees = Employee.objects.all()
         form = WorkShiftForm()
 
-    return render(request, 'events/add_work_shift.html', {'form': form})
+    return render(request, 'events/work_shift.html', {'form': form, 'events': events, 'employees': employees})
+

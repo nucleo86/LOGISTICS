@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block content %}
+
+<script>
+  $(document).ready(function() {
+    console.log("DOM ready");
+	  
+		$('#id_event').parent().addClass('form-group');
+		$('#id_employee').parent().addClass('form-group');
+		$('#id_start_time').parent().addClass('form-group');
+		$('#id_end_time').parent().addClass('form-group');
+
+		// Ukryj wszystkie pola formularza oprócz wyboru eventu
+		$('#id_employee').parents('.form-group').hide();
+		$('#id_start_time').parents('.form-group').hide();
+		$('#id_end_time').parents('.form-group').hide();
+		console.log("Fields hidden");
+
+		// Pokaż ukryte pola, gdy event jest wybrany
+		$('#id_event').on('change', function() {
+		console.log("Event change detected");
+		if ($(this).val()) {
+		console.log("Event selected");
+		$('#id_employee').parents('.form-group').show();
+		$('#id_start_time').parents('.form-group').show();
+		$('#id_end_time').parents('.form-group').show();
+		} else {
+		console.log("Event deselected");
+		$('#id_employee').parents('.form-group').hide();
+		$('#id_start_time').parents('.form-group').hide();
+		$('#id_end_time').parents('.form-group').hide();
+      }
+    });
+  });
+</script>
+
+<script>
+$(document).ready(function() {
+  $('#id_event').select2();
+  $('#id_employee').select2();
+});
+</script>
+
+<form method="post">
+{% csrf_token %}
+{{ form.as_p }}
+<button type="submit">Submit</button>
+</form>
+
+{% endblock %}
