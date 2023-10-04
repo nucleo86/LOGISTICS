@@ -52,8 +52,22 @@ class Assignment(models.Model):
 class WorkShift(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
+    work_date = models.DateField()
+    start_time = models.TimeField()
+    hours = models.IntegerField()
+
+    def clean(self):
+        # Tutaj można dodać logikę sprawdzania kolizji
+        pass
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super(WorkShift, self).save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.employee} - {self.event} - {self.start_time} to {self.end_time}"
+        return f"{self.employee} - {self.event} - {self.work_date} - {self.start_time} for {self.hours} hours"
+
+
+
+class TestModel(models.Model):
+    test_date = models.DateField()

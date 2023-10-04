@@ -101,6 +101,7 @@
                         <th>Imię i nazwisko</th>
                         <th>Telefon</th>
                         <th>Email</th>
+						<th>Godziny</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -109,6 +110,7 @@
                         <td><a href="{% url 'events:employee_detail' assignment.employee.id %}">{{ assignment.employee.first_name }} {{ assignment.employee.last_name }}</a></td>
                         <td><a href="tel:{{ assignment.employee.phone_number }}">{{ assignment.employee.phone_number }}</a></td>
                         <td><a href="mailto:{{ assignment.employee.e_mail }}">{{ assignment.employee.e_mail }}</a></td>
+						<td><a href="{% url 'events:work_shift' event.id assignment.employee.id %}">Godziny</a></td>
                     </tr>
                     {% endfor %}
                 </tbody>

@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block content %}
+
+<script>
+  function hideFields() {
+	$('#id_event').parent().addClass('form-group');
+	$('#id_employee').parent().addClass('form-group');
+	$('#id_start_time').parent().addClass('form-group');
+	$('#id_end_time').parent().addClass('form-group');
+	  
+    $('#id_employee').parents('.form-group').hide();
+    $('#id_start_time').parents('.form-group').hide();
+    $('#id_end_time').parents('.form-group').hide();
+  }
+
+  function showFields() {
+	$('#id_event').parent().addClass('form-group');
+	$('#id_employee').parent().addClass('form-group');
+	$('#id_start_time').parent().addClass('form-group');
+	$('#id_end_time').parent().addClass('form-group');
+	  
+    $('#id_employee').parents('.form-group').show();
+    $('#id_start_time').parents('.form-group').show();
+    $('#id_end_time').parents('.form-group').show();
+  }
+
+  $(document).ready(function() {
+    // Jeśli dla wydarzenia nie ma przypisanych pracowników
+    {% if no_employee %}
+    alert("Dla tego wydarzenia nie ma przypisanych pracowników.");
+    hideFields();
+    {% endif %}
+
+    $('#id_event').on('change', function() {
+      const selectedEvent = $(this).val();
+      if (selectedEvent) {
+        $.getJSON(`/get_first_employee_for_event/${selectedEvent}/`, function(data) {
+          if (data.first_employee_id) {
+            window.location.href = `/work_shift/${selectedEvent}/${data.first_employee_id}/`;
+          } else {
+            alert("Dla tego wydarzenia nie ma przypisanych pracowników.");
+            hideFields();
+          }
+        });
+      } else {
+        hideFields();
+      }
+    });
+  });
+</script>
+
+
+
+<!-- Form for Work Shift -->
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Submit</button>
+</form>
+
+
+<script>
+$(document).ready(function() {
+    const initialEmployeeId = $('#id_employee').val();
+    const initialEventId = $('#id_event').val();
+  
+    // Inicjalne zapytanie do API, aby uzyskać dane dla początkowo wybranego pracownika
+    fetchWorkShiftData(initialEventId, initialEmployeeId);
+  
+    $('#id_employee').on('change', function() {
+        const selectedEmployeeId = $(this).val();
+        const currentEventId = $('#id_event').val();
+        fetchWorkShiftData(currentEventId, selectedEmployeeId);
+    });
+});
+
+function fetchWorkShiftData(eventId, employeeId) {
+    $.ajax({
+        url: `/api/work_shifts/`,
+        type: 'GET',
+        data: { event_id: eventId, employee_id: employeeId },
+        success: function(response) {
+            updateWorkShiftTable(response);
+        }
+    });
+}
+
+function updateWorkShiftTable(data) {
+    $('#workShiftTable tbody').empty();
+    data.forEach(function(shift) {
+        $('#workShiftTable tbody').append(`<tr><td>${shift.start_time}</td><td>${shift.end_time}</td></tr>`);
+    });
+}
+
+</script>
+
+<br>
+<!-- Tabela wyświetlająca zmiany pracy -->
+<h2>Grafik</h2>
+<table class="table table-striped" id="workShiftTable">
+  <thead>
+    <tr>
+      <th>Start Time</th>
+      <th>End Time</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Wiersze zostaną dodane dynamicznie przez JavaScript -->
+  </tbody>
+</table>
+
+
+<script>
+window.addEventListener("DOMContentLoaded", (event) => {
+    setTimeout(() => {
+        let dateInput = document.getElementById("id_work_date");
+        console.log(dateInput);
+        if (dateInput) {
+            let currentValue = dateInput.value; // Pobranie bieżącej wartości
+            console.log(currentValue);
+            if (currentValue) {
+                // Zmiana formatu daty z DD.MM.YYYY na YYYY-MM-DD
+                let [day, month, year] = currentValue.split(".");
+                let formattedValue = `${year}-${month}-${day}`;
+                console.log(formattedValue);
+                dateInput.value = formattedValue;
+                console.log(dateInput.value);
+            }
+        }
+    }, 1000); // Opóźnienie 1 sekundy
+});
+
+</script>
+
+{% endblock %}

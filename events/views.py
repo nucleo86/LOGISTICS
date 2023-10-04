@@ -1,10 +1,12 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from .models import Event, Employee, Assignment, WorkShift
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django import template
-from django.shortcuts import redirect
 from .forms import WorkShiftForm
+from django.core.exceptions import ObjectDoesNotExist
+from django.http import JsonResponse
+from .forms import TestForm
 
 register = template.Library()
 
@@ -65,16 +67,73 @@ def employee_detail(request, pk):
     return render(request, 'events/employee_detail.html', context)
 
 
-def work_shift(request):
+def work_shift(request, event_id, employee_id):
+    try:
+        event = Event.objects.get(id=event_id)
+        employee = Employee.objects.get(id=employee_id)
+        initial_data = {
+            'event': event,
+            'employee': employee,
+            'work_date': event.start_time,
+        }
+    except ObjectDoesNotExist:
+        initial_data = {}
+
+    no_employee = False
+    if 'event' in initial_data:
+        employees_for_event = Employee.objects.filter(assignment__event_id=event_id)
+        if not employees_for_event.exists():
+            no_employee = True
+
+    # Pobranie wszystkich zmian pracy dla danego wydarzenia i pracownika
+    work_shifts = WorkShift.objects.filter(event_id=event_id, employee_id=employee_id)
+
     if request.method == 'POST':
-        form = WorkShiftForm(request.POST)
+        form = WorkShiftForm(request.POST, initial=initial_data, event_id=event_id)
         if form.is_valid():
             form.save()
-            return redirect('work_shift')
-    else:
-        events = Event.objects.all()
-        employees = Employee.objects.all()
-        form = WorkShiftForm()
+            initial_data['employee'] = form.cleaned_data['employee']
+            form = WorkShiftForm(initial=initial_data, event_id=event_id)
 
-    return render(request, 'events/work_shift.html', {'form': form, 'events': events, 'employees': employees})
+    else:
+        form = WorkShiftForm(initial=initial_data, event_id=event_id)
+
+    return render(request, 'events/work_shift.html', {'form': form, 'no_employee': no_employee, 'work_shifts': work_shifts})
+
+
+
+
+def get_first_employee_for_event(request, event_id):
+    employees = Employee.objects.filter(assignment__event_id=event_id)
+    if employees.exists():
+        first_employee = employees.first()
+        return JsonResponse({'first_employee_id': first_employee.id})
+    else:
+        return JsonResponse({'first_employee_id': None})
+
+
+def get_work_shifts(request):
+    event_id = request.GET.get('event_id', None)
+    employee_id = request.GET.get('employee_id', None)
+
+    if event_id is None or employee_id is None:
+        return JsonResponse({'error': 'Missing parameters'}, status=400)
+
+    work_shifts = WorkShift.objects.filter(event_id=event_id, employee_id=employee_id).values('work_date', 'start_time', 'hours')
+    return JsonResponse(list(work_shifts), safe=False)
+
+
+
+def test_view(request):
+    if request.method == 'POST':
+        form = TestForm(request.POST)
+        if form.is_valid():
+            form.save()
+    else:
+        form = TestForm(initial={'test_date': '2023-09-28'})  # Ustawiamy wartość początkową
+
+    return render(request, 'test_template.html', {'form': form})
+
+
+
 

@@ -4,50 +4,164 @@
 
 {% block content %}
 
-<script>
-  $(document).ready(function() {
-    console.log("DOM ready");
-	  
-		$('#id_event').parent().addClass('form-group');
-		$('#id_employee').parent().addClass('form-group');
-		$('#id_start_time').parent().addClass('form-group');
-		$('#id_end_time').parent().addClass('form-group');
+<div class="container my-5">
+    <h1 class="mb-4">Grafik indywidualny</h1>
 
-		// Ukryj wszystkie pola formularza oprócz wyboru eventu
-		$('#id_employee').parents('.form-group').hide();
-		$('#id_start_time').parents('.form-group').hide();
-		$('#id_end_time').parents('.form-group').hide();
-		console.log("Fields hidden");
+    <!-- Karta dla wyboru wydarzenia i pracownika -->
+    <div class="card mb-4">
+        <div class="card-header">
+            Wybór Wydarzenia i Pracownika
+        </div>
+        <div class="card-body">
+            <script>
+            function hideFields() {
+				$('#id_event').parent().addClass('form-group');
+				$('#id_employee').parent().addClass('form-group');
+				$('#id_start_time').parent().addClass('form-group');
+				$('#id_end_time').parent().addClass('form-group');
+				  
+				$('#id_employee').parents('.form-group').hide();
+				$('#id_start_time').parents('.form-group').hide();
+				$('#id_end_time').parents('.form-group').hide();
+			  }
 
-		// Pokaż ukryte pola, gdy event jest wybrany
-		$('#id_event').on('change', function() {
-		console.log("Event change detected");
-		if ($(this).val()) {
-		console.log("Event selected");
-		$('#id_employee').parents('.form-group').show();
-		$('#id_start_time').parents('.form-group').show();
-		$('#id_end_time').parents('.form-group').show();
-		} else {
-		console.log("Event deselected");
-		$('#id_employee').parents('.form-group').hide();
-		$('#id_start_time').parents('.form-group').hide();
-		$('#id_end_time').parents('.form-group').hide();
-      }
-    });
-  });
-</script>
+			  function showFields() {
+				$('#id_event').parent().addClass('form-group');
+				$('#id_employee').parent().addClass('form-group');
+				$('#id_start_time').parent().addClass('form-group');
+				$('#id_end_time').parent().addClass('form-group');
+				  
+				$('#id_employee').parents('.form-group').show();
+				$('#id_start_time').parents('.form-group').show();
+				$('#id_end_time').parents('.form-group').show();
+			  }
 
-<script>
-$(document).ready(function() {
-  $('#id_event').select2();
-  $('#id_employee').select2();
-});
-</script>
+			  $(document).ready(function() {
+				// Jeśli dla wydarzenia nie ma przypisanych pracowników
+				{% if no_employee %}
+				alert("Dla tego wydarzenia nie ma przypisanych pracowników.");
+				hideFields();
+				{% endif %}
 
-<form method="post">
-{% csrf_token %}
-{{ form.as_p }}
-<button type="submit">Submit</button>
-</form>
+				$('#id_event').on('change', function() {
+				  const selectedEvent = $(this).val();
+				  if (selectedEvent) {
+					$.getJSON(`/get_first_employee_for_event/${selectedEvent}/`, function(data) {
+					  if (data.first_employee_id) {
+						window.location.href = `/work_shift/${selectedEvent}/${data.first_employee_id}/`;
+					  } else {
+						alert("Dla tego wydarzenia nie ma przypisanych pracowników.");
+						hideFields();
+					  }
+					});
+				  } else {
+					hideFields();
+				  }
+				});
+			  });
+            </script>
+            <form id="eventAndEmployeeForm" method="post">
+                {% csrf_token %}
+                {{ form.event.label_tag }}: {{ form.event }}
+                {{ form.employee.label_tag }}: {{ form.employee }}
+            </form>
+        </div>
+    </div>
+
+    <!-- Karta dla daty i godzin -->
+    <div class="card mb-4">
+        <div class="card-header">
+            Wybór Daty i Godzin
+        </div>
+        <div class="card-body">
+            <form id="timeAndDateForm" method="post">
+                {% csrf_token %}
+                {{ form.work_date.label_tag }}: {{ form.work_date }}
+                {{ form.start_time.label_tag }}: {{ form.start_time }}
+                {{ form.hours.label_tag }}: {{ form.hours }}
+                <button type="submit">Zatwierdź</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Karta dla tabeli -->
+    <div class="card">
+        <div class="card-header">
+            Grafik Pracy
+        </div>
+        <div class="card-body">
+            <script>
+			$(document).ready(function() {
+				const initialEmployeeId = $('#id_employee').val();
+				const initialEventId = $('#id_event').val();
+			  
+				// Inicjalne zapytanie do API, aby uzyskać dane dla początkowo wybranego pracownika
+				fetchWorkShiftData(initialEventId, initialEmployeeId);
+			  
+				$('#id_employee').on('change', function() {
+					const selectedEmployeeId = $(this).val();
+					const currentEventId = $('#id_event').val();
+					fetchWorkShiftData(currentEventId, selectedEmployeeId);
+				});
+			});
+
+			function fetchWorkShiftData(eventId, employeeId) {
+				$.ajax({
+					url: `/api/work_shifts/`,
+					type: 'GET',
+					data: { event_id: eventId, employee_id: employeeId },
+					success: function(response) {
+						updateWorkShiftTable(response);
+					}
+				});
+			}
+
+			function updateWorkShiftTable(data) {
+				$('#workShiftTable tbody').empty();
+				let totalHours = 0; // Zmienna do przechowywania sumy godzin
+
+				data.forEach(function(shift) {
+					const startTime = new Date(`1970-01-01T${shift.start_time}Z`);
+					const endTime = new Date(startTime.getTime() + (shift.hours * 60 * 60 * 1000));
+					const formattedEndTime = endTime.toISOString().substr(11, 5); // Konwersja na format HH:MM
+
+					$('#workShiftTable tbody').append(`
+						<tr>
+							<td>${shift.work_date}</td>
+							<td>${shift.start_time.substring(0, 5)}</td>
+							<td>${formattedEndTime}</td>
+							<td>${shift.hours}</td>
+						</tr>
+					`);
+
+					totalHours += shift.hours;
+				});
+
+				// Dodanie wiersza "Podsumowanie" na końcu tabeli
+				$('#workShiftTable tbody').append(`
+					<tr>
+						<td colspan="3">Podsumowanie</td>
+						<td>${totalHours}</td>
+					</tr>
+				`);
+			}
+            </script>
+
+            <table class="table table-striped" id="workShiftTable">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Godzina rozpoczęcia</th>
+                        <th>Godzina zakończenia</th>
+                        <th>Liczba godzin</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Wiersze zostaną dodane dynamicznie przez JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 {% endblock %}
