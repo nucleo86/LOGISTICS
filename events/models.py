@@ -28,7 +28,7 @@ class Place(models.Model):
 
 class Event(models.Model):
     name = models.CharField(max_length=255, null=True)
-    start_time = models.DateField(null=True, blank=True)
+    start_time = models.DateField()
     end_time = models.DateField(null=True, blank=True)
     protocol_number = models.CharField(max_length=100, blank=True)
     place = models.ForeignKey(Place, on_delete=models.SET_NULL, null=True, blank=True)

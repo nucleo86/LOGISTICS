@@ -135,5 +135,16 @@ def test_view(request):
     return render(request, 'test_template.html', {'form': form})
 
 
+def get_event_date_range(request, event_id):
+    try:
+        event = Event.objects.get(id=event_id)
+        start_date = event.start_time  # Usunięto .date()
+        end_date = event.end_time if event.end_time else None  # Usunięto .date()
+        return JsonResponse({'start_date': str(start_date), 'end_date': str(end_date)})
+    except Event.DoesNotExist:
+        return JsonResponse({'error': 'Event not found'}, status=404)
+
+
+
 
 

@@ -10,6 +10,7 @@ urlpatterns = [
     path('work_shift/<int:event_id>/<int:employee_id>/', views.work_shift, name='work_shift'),
     path('get_first_employee_for_event/<int:event_id>/', views.get_first_employee_for_event, name='get_first_employee_for_event'),
     path('api/work_shifts/', views.get_work_shifts, name='get_work_shifts'),
+    path('get_event_date_range/<int:event_id>/', views.get_event_date_range, name='get_event_date_range'),
     path('test/', views.test_view, name='test_view'),
 ]
 

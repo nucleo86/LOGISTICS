@@ -3,165 +3,238 @@
 {% load static %}
 
 {% block content %}
+<div class="container mt-4">
+  <script>
+    function hideFields() {
+      $('#id_employee').parents('.form-group').hide();
+      $('#additional-fields').hide();
+      $('#workShiftTable').hide();
+    }
 
-<div class="container my-5">
-    <h1 class="mb-4">Grafik indywidualny</h1>
+    function showFields() {
+      $('#id_employee').parents('.form-group').show();
+      $('#additional-fields').show();
+      $('#workShiftTable').show();
+    }
 
-    <!-- Karta dla wyboru wydarzenia i pracownika -->
-    <div class="card mb-4">
-        <div class="card-header">
-            Wybór Wydarzenia i Pracownika
-        </div>
-        <div class="card-body">
-            <script>
-            function hideFields() {
-				$('#id_event').parent().addClass('form-group');
-				$('#id_employee').parent().addClass('form-group');
-				$('#id_start_time').parent().addClass('form-group');
-				$('#id_end_time').parent().addClass('form-group');
-				  
-				$('#id_employee').parents('.form-group').hide();
-				$('#id_start_time').parents('.form-group').hide();
-				$('#id_end_time').parents('.form-group').hide();
-			  }
+    
+      $('#id_event').on('change', function() {
+        const selectedEvent = $(this).val();
+        if (selectedEvent) {
+          $.getJSON(`/get_event_date_range/${selectedEvent}/`, function(data) {
+            const startDate = data.start_date;
+            const endDate = data.end_date;
+            $('#id_work_date').attr('min', startDate);
+            if (endDate) {
+              $('#id_work_date').attr('max', endDate);
+            } else {
+              $('#id_work_date').removeAttr('max');
+            }
+          });
+        } else {
+          $('#id_work_date').removeAttr('min');
+          $('#id_work_date').removeAttr('max');
+        }
+      });
 
-			  function showFields() {
-				$('#id_event').parent().addClass('form-group');
-				$('#id_employee').parent().addClass('form-group');
-				$('#id_start_time').parent().addClass('form-group');
-				$('#id_end_time').parent().addClass('form-group');
-				  
-				$('#id_employee').parents('.form-group').show();
-				$('#id_start_time').parents('.form-group').show();
-				$('#id_end_time').parents('.form-group').show();
-			  }
+    $(document).ready(function() {
+      if (!$('#id_event').val()) {
+        hideFields();
+      } else {
+        showFields();
+      }
 
-			  $(document).ready(function() {
-				// Jeśli dla wydarzenia nie ma przypisanych pracowników
-				{% if no_employee %}
-				alert("Dla tego wydarzenia nie ma przypisanych pracowników.");
-				hideFields();
-				{% endif %}
+      $('#id_event').on('change', function() {
+        const selectedEvent = $(this).val();
+        if (selectedEvent) {
+          $.getJSON(`/get_first_employee_for_event/${selectedEvent}/`, function(data) {
+            if (data.first_employee_id) {
+              window.location.href = `/work_shift/${selectedEvent}/${data.first_employee_id}/`;
+            } else {
+              alert("No employees are assigned for this event.");
+              hideFields();
+            }
+          });
+        } else {
+          hideFields();
+        }
+      });
+    });
+  </script>
 
-				$('#id_event').on('change', function() {
-				  const selectedEvent = $(this).val();
-				  if (selectedEvent) {
-					$.getJSON(`/get_first_employee_for_event/${selectedEvent}/`, function(data) {
-					  if (data.first_employee_id) {
-						window.location.href = `/work_shift/${selectedEvent}/${data.first_employee_id}/`;
-					  } else {
-						alert("Dla tego wydarzenia nie ma przypisanych pracowników.");
-						hideFields();
-					  }
-					});
-				  } else {
-					hideFields();
-				  }
-				});
-			  });
-            </script>
-            <form id="eventAndEmployeeForm" method="post">
-                {% csrf_token %}
-                {{ form.event.label_tag }}: {{ form.event }}
-                {{ form.employee.label_tag }}: {{ form.employee }}
-            </form>
-        </div>
+  <div class="card">
+    <div class="card-header">
+      Dane
     </div>
-
-    <!-- Karta dla daty i godzin -->
-    <div class="card mb-4">
-        <div class="card-header">
-            Wybór Daty i Godzin
+    <div class="card-body">
+      <form method="post" class="needs-validation">
+        {% csrf_token %}
+        <div class="form-group">
+          {{ form.event.label_tag }} {{ form.event }}
         </div>
-        <div class="card-body">
-            <form id="timeAndDateForm" method="post">
-                {% csrf_token %}
-                {{ form.work_date.label_tag }}: {{ form.work_date }}
-                {{ form.start_time.label_tag }}: {{ form.start_time }}
-                {{ form.hours.label_tag }}: {{ form.hours }}
-                <button type="submit">Zatwierdź</button>
-            </form>
+        <div class="form-group">
+          {{ form.employee.label_tag }} {{ form.employee }}
         </div>
+        <div id="additional-fields" class="row">
+          <div class="form-group col-md-3">
+            {{ form.work_date.label_tag }} {{ form.work_date }}
+          </div>
+          <div class="form-group col-md-3">
+            {{ form.start_time.label_tag }} {{ form.start_time }}
+          </div>
+          <div class="form-group col-md-3">
+            {{ form.hours.label_tag }} {{ form.hours }}
+          </div>
+          <div class="form-group col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary" >Wyślij</button>
+          </div>
+        </div>
+      </form>
     </div>
+  </div>
 
-    <!-- Karta dla tabeli -->
-    <div class="card">
-        <div class="card-header">
-            Grafik Pracy
-        </div>
-        <div class="card-body">
-            <script>
-			$(document).ready(function() {
-				const initialEmployeeId = $('#id_employee').val();
-				const initialEventId = $('#id_event').val();
-			  
-				// Inicjalne zapytanie do API, aby uzyskać dane dla początkowo wybranego pracownika
-				fetchWorkShiftData(initialEventId, initialEmployeeId);
-			  
-				$('#id_employee').on('change', function() {
-					const selectedEmployeeId = $(this).val();
-					const currentEventId = $('#id_event').val();
-					fetchWorkShiftData(currentEventId, selectedEmployeeId);
-				});
-			});
-
-			function fetchWorkShiftData(eventId, employeeId) {
-				$.ajax({
-					url: `/api/work_shifts/`,
-					type: 'GET',
-					data: { event_id: eventId, employee_id: employeeId },
-					success: function(response) {
-						updateWorkShiftTable(response);
-					}
-				});
-			}
-
-			function updateWorkShiftTable(data) {
-				$('#workShiftTable tbody').empty();
-				let totalHours = 0; // Zmienna do przechowywania sumy godzin
-
-				data.forEach(function(shift) {
-					const startTime = new Date(`1970-01-01T${shift.start_time}Z`);
-					const endTime = new Date(startTime.getTime() + (shift.hours * 60 * 60 * 1000));
-					const formattedEndTime = endTime.toISOString().substr(11, 5); // Konwersja na format HH:MM
-
-					$('#workShiftTable tbody').append(`
-						<tr>
-							<td>${shift.work_date}</td>
-							<td>${shift.start_time.substring(0, 5)}</td>
-							<td>${formattedEndTime}</td>
-							<td>${shift.hours}</td>
-						</tr>
-					`);
-
-					totalHours += shift.hours;
-				});
-
-				// Dodanie wiersza "Podsumowanie" na końcu tabeli
-				$('#workShiftTable tbody').append(`
-					<tr>
-						<td colspan="3">Podsumowanie</td>
-						<td>${totalHours}</td>
-					</tr>
-				`);
-			}
-            </script>
-
-            <table class="table table-striped" id="workShiftTable">
-                <thead>
-                    <tr>
-                        <th>Data</th>
-                        <th>Godzina rozpoczęcia</th>
-                        <th>Godzina zakończenia</th>
-                        <th>Liczba godzin</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Wiersze zostaną dodane dynamicznie przez JavaScript -->
-                </tbody>
-            </table>
-        </div>
+  <div id="workShiftTable" class="card mt-4">
+    <div class="card-header">
+      Grafik indywidualny
     </div>
+    <div class="card-body">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Początek</th>
+            <th>Koniec</th>
+            <th>L. godzin</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Rows will be dynamically added by JavaScript -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+	  function formatDateToDDMMYYYY(date) {
+		const [year, month, day] = date.split('-');
+		return `${day}.${month}.${year}`;
+	  }
+    
+      $('#id_event').on('change', function() {
+        const selectedEvent = $(this).val();
+        if (selectedEvent) {
+          $.getJSON(`/get_event_date_range/${selectedEvent}/`, function(data) {
+            const startDate = data.start_date;
+            const endDate = data.end_date;
+            $('#id_work_date').attr('min', startDate);
+            if (endDate) {
+              $('#id_work_date').attr('max', endDate);
+            } else {
+              $('#id_work_date').removeAttr('max');
+            }
+          });
+        } else {
+          $('#id_work_date').removeAttr('min');
+          $('#id_work_date').removeAttr('max');
+        }
+      });
+
+    $(document).ready(function() {
+      const initialEmployeeId = $('#id_employee').val();
+      const initialEventId = $('#id_event').val();
+      fetchWorkShiftData(initialEventId, initialEmployeeId);
+      $('#id_employee').on('change', function() {
+        const selectedEmployeeId = $(this).val();
+        const currentEventId = $('#id_event').val();
+        fetchWorkShiftData(currentEventId, selectedEmployeeId);
+      });
+    });
+
+    function fetchWorkShiftData(eventId, employeeId) {
+      $.ajax({
+        url: `/api/work_shifts/`,
+        type: 'GET',
+        data: { event_id: eventId, employee_id: employeeId },
+        success: function(response) {
+          updateWorkShiftTable(response);
+        }
+      });
+    }
+
+  function updateWorkShiftTable(data) {
+    $('#workShiftTable tbody').empty();
+    let totalHours = 0;
+    data.forEach(function(shift) {
+      const formattedDate = formatDateToDDMMYYYY(shift.work_date);
+      const startTime = new Date(`1970-01-01T${shift.start_time}Z`);
+      const endTime = new Date(startTime.getTime() + (shift.hours * 60 * 60 * 1000));
+      const formattedEndTime = endTime.toISOString().substr(11, 5);
+      $('#workShiftTable tbody').append(`
+        <tr>
+          <td>${formattedDate}</td>
+          <td>${shift.start_time.substring(0, 5)}</td>
+          <td>${formattedEndTime}</td>
+          <td>${shift.hours}</td>
+        </tr>
+      `);
+      totalHours += shift.hours;
+    });
+    $('#workShiftTable tbody').append(`
+      <tr>
+        <td colspan="3">SUMA</td>
+        <td>${totalHours}</td>
+      </tr>
+    `);
+  }
+</script>
 </div>
+
+
+<script>
+    function updateWorkDateRange(eventId) {
+        $.getJSON(`/get_event_date_range/${eventId}/`, function(data) {
+            $('#id_work_date').attr('min', data.start_date);
+            if (data.end_date) {
+                $('#id_work_date').attr('max', data.end_date);
+            } else {
+                $('#id_work_date').removeAttr('max');
+            }
+        });
+    }
+
+    
+      $('#id_event').on('change', function() {
+        const selectedEvent = $(this).val();
+        if (selectedEvent) {
+          $.getJSON(`/get_event_date_range/${selectedEvent}/`, function(data) {
+            const startDate = data.start_date;
+            const endDate = data.end_date;
+            $('#id_work_date').attr('min', startDate);
+            if (endDate) {
+              $('#id_work_date').attr('max', endDate);
+            } else {
+              $('#id_work_date').removeAttr('max');
+            }
+          });
+        } else {
+          $('#id_work_date').removeAttr('min');
+          $('#id_work_date').removeAttr('max');
+        }
+      });
+
+    $(document).ready(function() {
+        const selectedEvent = $('#id_event').val();
+        if (selectedEvent) {
+            updateWorkDateRange(selectedEvent);
+        }
+
+        $('#id_event').on('change', function() {
+            const newSelectedEvent = $(this).val();
+            if (newSelectedEvent) {
+                updateWorkDateRange(newSelectedEvent);
+            }
+        });
+    });
+</script>
 
 {% endblock %}
