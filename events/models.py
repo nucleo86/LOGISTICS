@@ -1,14 +1,55 @@
 from django.db import models
 
+class Department(models.Model):
+    """Represents a department in an organization."""
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+class Specialization(models.Model):
+    """Represents a specialization field."""
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+class Group(models.Model):
+    """Represents a group within an organization or department."""
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
 class Employee(models.Model):
+    """Represents an employee."""
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100, null=True, blank=True)
-    specialization = models.CharField(max_length=100, null=True, blank=True)
-    e_mail = models.CharField(max_length=255, null=True, blank=True)
+    e_mail = models.EmailField(null=True, blank=True)
     phone_number = models.CharField(max_length=15, null=True, blank=True)
+    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True)
+    employment_status = models.BooleanField(default=True)
+    groups = models.ManyToManyField(Group, blank=True)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+
+class EmployeeSpecialization(models.Model):
+    """Represents an employee's specialization."""
+    LEVELS = [
+        (1, 'Beginner'),
+        (2, 'Intermediate'),
+        (3, 'Advanced'),
+    ]
+
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    specialization = models.ForeignKey(Specialization, on_delete=models.CASCADE)
+    skill_level = models.IntegerField(choices=LEVELS)
+
+    def __str__(self):
+        return f"{self.employee} - {self.specialization} - Level {self.skill_level}"
+
+
 
 class Client(models.Model):
     name = models.CharField(max_length=255)
