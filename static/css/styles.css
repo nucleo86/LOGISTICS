@@ -1,6 +1,25 @@
 @charset "utf-8";
 /* CSS Document */
 
+body {
+    font-family: 'Roboto', sans-serif;
+    font-size: 14px;
+}
+
+
 a {
     text-decoration: none !important;
 }
+
+.shadow-card {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.reverse-table-striped tbody tr:nth-of-type(even) {
+    background-color: rgba(0,0,0,.05);
+}
+
+input, select, textarea, button {
+    font-size: 14px !important;
+{
+

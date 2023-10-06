@@ -5,20 +5,20 @@
 <div class="container-fluid" style="margin-top: -20px">
 
 <div class="form-container mt-4 text-center">
-    <form class="d-inline-block me-4" method="get">
+    <form class="d-inline-block me-4 shadow-card" method="get">
         <div class="input-group">
             <input type="text" class="form-control" name="q" placeholder="Szukaj..." value="{{ request.GET.q }}">
-            <button class="btn btn-primary" type="submit">Szukaj</button>
+            <button class="btn btn-primary shadow-card" type="submit">Szukaj</button>
         </div>
     </form>
 
-    <form class="d-inline-block" method="get">
+    <form class="d-inline-block shadow-card" method="get">
         <div class="input-group">
             <label for="from_date" class="input-group-text">Od:</label>
             <input type="date" class="form-control" id="from_date" name="from_date">
             <label for="to_date" class="input-group-text">Do:</label>
             <input type="date" class="form-control" id="to_date" name="to_date">
-            <button class="btn btn-secondary" type="submit">Filtruj</button>
+            <button class="btn btn-secondary shadow-card" type="submit">Filtruj</button>
         </div>
     </form>
 </div>
@@ -27,7 +27,7 @@
 <div class="container mt-4">
     <div class="row">
         <div class="col-md-12">
-            <div class="card">
+            <div class="card shadow-card">
                 <div class="card-header">
                     Lista wydarzeń
                 </div>
@@ -37,9 +37,10 @@
                             <tr>
                                 <th>Nazwa</th>
                                 <th>Data</th>
+                                <th>Miasto</th>
+
                                 <th>Miejsce</th>
                                 <th>Sprzedawca</th>
-                                <!--<th>Szczegóły</th>-->
                             </tr>
                         </thead>
                         <tbody>
@@ -47,11 +48,10 @@
                             <tr>
                                 <td><a href="{% url 'events:event_detail' event.id %}">{{ event.name }}</a></td>
                                 <td>{{ event.start_time|date:"d.m.Y" }} - {{ event.end_time|date:"d.m.Y"|default:"" }}</td>
+                                <td>{{ event.place.city }}</td>
                                 <td>{{ event.place }}</td>
                                 <td><a href="{% url 'events:employee_detail' event.seller.id %}">{{ event.seller.first_name }} {{ event.seller.last_name }}</a></td>
-                                <!--<td>
-                                    <a href="{% url 'events:event_detail' event.id %}" class="btn btn-sm btn-primary">Szczegóły</a>
-                                </td>-->
+
                             </tr>
                             {% endfor %}
                         </tbody>

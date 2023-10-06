@@ -3,15 +3,28 @@
 {% block content %}
 
 <div class="container mt-5">
-    <!-- Event Title -->
-    <h1 class="text-center">{{ event.name }}</h1><br>
+    <div class="row mb-4">
+        <div class="col-md-2 text-left">
+            {% if prev_event %}
+                <a href="{% url 'events:event_detail' prev_event.id %}" class="btn btn-outline-dark">Poprzedni Event</a>
+            {% endif %}
+        </div>
+        <div class="col-md-8 text-center">
+            <h2>{{ event.name }}</h2>
+        </div>
+        <div class="col-md-2 text-right">
+            {% if next_event %}
+                <a href="{% url 'events:event_detail' next_event.id %}" class="btn btn-outline-dark" style="float: right;">Następny Event</a>
+            {% endif %}
+        </div>
+    </div>
 
     <div class="row mb-4">
         <!-- Table for Project Managers -->
         {% if event.project_managers.all %}
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">Project Managerowie</div>
+            <div class="card shadow-card">
+                <div class="card-header">Project Manager</div>
                 <div class="card-body">
                     <table class="table table-striped">
                         <thead>
@@ -38,7 +51,7 @@
 
         <!-- Card for Seller -->
         <div class="col-md-6">
-            <div class="card">
+            <div class="card shadow-card">
                 <div class="card-header">Sprzedawca</div>
                 <div class="card-body">
                     <table class="table table-striped">
@@ -63,60 +76,86 @@
     </div>
 
     <!-- Basic Info -->
-    <div class="card mb-4">
+    <div class="card mb-4 shadow-card">
         <div class="card-header">Podstawowe informacje</div>
         <div class="card-body">
-            <table class="table">
+            <table class="table reverse-table-striped">
                 <tr>
                     <th>Data</th>
                     <th>Nr protokołu</th>
+                    <th>Miasto</th>
                     <th>Miejsce</th>
+                    <th>Lokalizacja</th>
                 </tr>
                 <tr>
                     <td>{{ event.start_time|date:"d.m.Y" }} - {{ event.end_time|date:"d.m.Y"|default:"" }}</td>
                     <td>{{ event.protocol_number }}</td>
+                    <td>{{ event.place.city }}</td>
                     <td>{{ event.place.name }}</td>
+                    <td>
+                        <a href="https://www.google.com/maps/search/{{ event.place.street|urlencode }}+{{ event.place.postal_code|urlencode }}+{{ event.place.city|urlencode }}" target="_blank">
+                            {{ event.place.street }} ({{ event.place.postal_code }})
+                        </a>
+                    </td>
                 </tr>
             </table>
         </div>
     </div>
 
     <!-- Clients -->
-    <div class="card mb-4">
+    <div class="card mb-4 shadow-card">
         <div class="card-header">Klient</div>
         <div class="card-body">
-            {% for client in event.clients.all %}
-            {{ client.name }}
-            {% endfor %}
-        </div>
-    </div>
-
-    <!-- Other Employees -->
-    <div class="card">
-        <div class="card-header">Ekipa</div>
-        <div class="card-body">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Imię i nazwisko</th>
-                        <th>Telefon</th>
-                        <th>Email</th>
-						<th>Grafik</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for assignment in assignments %}
-                    <tr class="{% cycle 'table-default' 'table-secondary' %}">
-                        <td><a href="{% url 'events:employee_detail' assignment.employee.id %}">{{ assignment.employee.first_name }} {{ assignment.employee.last_name }}</a></td>
-                        <td><a href="tel:{{ assignment.employee.phone_number }}">{{ assignment.employee.phone_number }}</a></td>
-                        <td><a href="mailto:{{ assignment.employee.e_mail }}">{{ assignment.employee.e_mail }}</a></td>
-						<td><a href="{% url 'events:work_shift' event.id assignment.employee.id %}">Grafik</a></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
+            <table class="table reverse-table-striped">
+                <tr>
+                    <th>Nazwa</th>
+                    <th>Email</th>
+                    <th>Telefon</th>
+                </tr>
+                {% for client in event.clients.all %}
+                <tr>
+                    <td>{{ client.name }}</td>
+                    <td><a href="mailto:{{ client.e_mail }}">{{ client.e_mail }}</a></td>
+                    <td><a href="tel:{{ client.phone_number }}">{{ client.phone_number }}</a></td>
+                </tr>
+                {% endfor %}
             </table>
         </div>
-
     </div>
+
+
+
+<!-- Other Employees -->
+<div class="card shadow-card">
+    <div class="card-header">Pozostali pracownicy</div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Imię i nazwisko</th>
+                    <th>Telefon</th>
+                    <th>Email</th>
+                    <th>Grafik</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for role, role_assignments in assignments_by_role.items %}
+                    <tr style="background-color: rgba(0, 0, 0, 0.5); font-weight: bold; text-align: center; font-size: 75%; color: #fff;">
+                        <td colspan="4" style="padding: 2px;">{{ role }}</td>
+                    </tr>
+                    {% for assignment in role_assignments %}
+                        <tr class="{% cycle 'table-default' 'table-secondary' %}">
+                            <td><a href="{% url 'events:employee_detail' assignment.employee.id %}">{{ assignment.employee.first_name }} {{ assignment.employee.last_name }}</a></td>
+                            <td><a href="tel:{{ assignment.employee.phone_number }}">{{ assignment.employee.phone_number }}</a></td>
+                            <td><a href="mailto:{{ assignment.employee.e_mail }}">{{ assignment.employee.e_mail }}</a></td>
+                            <td><a href="{% url 'events:work_shift' event.id assignment.employee.id %}">Grafik</a></td>
+                        </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
 
 {% endblock %}

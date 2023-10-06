@@ -8,16 +8,16 @@
     <title>Logistyka</title>
 
 	<link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
-	<link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}">
 	<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
 	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 	<link href="{% static 'admin/css/vendor/select2/select2.min.css' %}" rel="stylesheet" />
 	<script src="{% static 'admin/js/vendor/select2/select2.full.min.js' %}"></script>
-
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}">
 
 </head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+<body style="background-color: #ddd">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-card">
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -26,11 +26,9 @@
                 <li class="nav-item active">
                     <a class="nav-link" href="{% url 'events:event_list' %}">Eventy</a>
                 </li>
-				<li class="nav-item active">
-					<a class="nav-link" href="{% url 'admin:index' %}">Panel Administracyjny</a>
-				</li>
-
-                <!-- Możesz dodać więcej linków w nawigacji według potrzeb -->
+                <li class="nav-item nav-item-right">
+                    <a class="nav-link" href="{% url 'admin:index' %}">Panel Administracyjny</a>
+                </li>
             </ul>
         </div>
     </nav>
