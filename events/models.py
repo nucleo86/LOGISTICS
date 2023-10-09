@@ -53,7 +53,7 @@ class EmployeeSpecialization(models.Model):
 
 class Client(models.Model):
     name = models.CharField(max_length=255)
-    e_mail = models.CharField(max_length=255, null=True, blank=True)
+    e_mail = models.EmailField(null=True, blank=True)
     phone_number = models.CharField(max_length=15, null=True, blank=True)
 
     def __str__(self):
@@ -64,7 +64,7 @@ class Place(models.Model):
     street = models.CharField(max_length=255,null=True, blank=True)
     postal_code = models.CharField(max_length=10, null=True, blank=True)
     city = models.CharField(max_length=255, null=True, blank=True)
-    e_mail = models.CharField(max_length=255, null=True, blank=True)
+    e_mail = models.EmailField(null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -80,9 +80,7 @@ class Event(models.Model):
     seller = models.ForeignKey(Employee, related_name='sold_events_for', on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
-        start_date_str = format(self.start_time, '%d.%m.%Y') if self.start_time else ''
-        end_date_str = format(self.end_time, '%d.%m.%Y') if self.end_time else ''
-        return f"{self.protocol_number} {self.name or ''} {start_date_str} {end_date_str}"
+        return f"{self.name or ''}"
 
 class Assignment(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, null=True, blank=True)
@@ -91,7 +89,7 @@ class Assignment(models.Model):
     role = models.ForeignKey(Specialization, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
-        return f"{self.employee} assigned to {self.event} as {self.role}"  # Zaktualizowane
+        return f"{self.employee} assigned to {self.event} as {self.role}"
 
 class WorkShift(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
@@ -109,9 +107,4 @@ class WorkShift(models.Model):
         super(WorkShift, self).save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.employee} - {self.event} - {self.work_date} - {self.start_time} for {self.hours} hours"
-
-
-
-class TestModel(models.Model):
-    test_date = models.DateField()
+        return f"{self.event.name}"

@@ -75,7 +75,7 @@ for _ in range(50):
     place.save()
 
 # Generate Events
-for _ in range(100):
+for _ in range(500):
     start_time = fake.date_this_decade()
     end_time = start_time + timedelta(days=random.randint(3, 21))
     event = Event(
@@ -90,8 +90,8 @@ for _ in range(100):
     event.project_managers.add(random.choice(list(Employee.objects.filter(groups__name="Project manager"))))
     event.clients.add(*random.sample(list(Client.objects.all()), k=random.randint(1, 3)))
 
-    # Generate Assignments and WorkShifts
-    for _ in range(random.randint(1, 5)):
+    # Generowanie Assignments i WorkShifts
+    for _ in range(random.randint(3, 21)):
         assignment_employee = random.choice(Employee.objects.all())
         assignment = Assignment(
             employee=assignment_employee,
@@ -105,19 +105,25 @@ for _ in range(100):
             assignment.role = chosen_role
         assignment.save()
 
-        # Dodaj logikę generowania WorkShift
-        work_date = fake.date_between_dates(date_start=event.start_time, date_end=event.end_time)
-        start_time_str = fake.time()
-        start_time = datetime.strptime(start_time_str, '%H:%M:%S').time()
-        hours = random.randint(6, 14)  # Losowa liczba godzin, możesz dostosować
+        # Generowanie WorkShifts
+        work_dates = set()  # Tworzenie zbioru dat
+        while len(work_dates) < 3:  # Minimalnie 3 różne daty
+            work_date = fake.date_between_dates(date_start=event.start_time, date_end=event.end_time)
+            work_dates.add(work_date)
 
-        work_shift = WorkShift(
-            employee=assignment.employee,
-            event=event,
-            work_date=work_date,
-            start_time=start_time,
-            hours=hours
-        )
-        work_shift.save()
+        for work_date in work_dates:
+            start_time_str = fake.time()
+            start_time = datetime.strptime(start_time_str, '%H:%M:%S').time()
+            hours = random.randint(6, 14)  # Losowa liczba godzin, możesz dostosować
+
+            work_shift = WorkShift(
+                employee=assignment.employee,
+                event=event,
+                work_date=work_date,
+                start_time=start_time,
+                hours=hours
+            )
+            work_shift.save()
+
 
 print("Dane zostały wygenerowane!")

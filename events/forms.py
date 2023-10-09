@@ -2,12 +2,6 @@ from django import forms
 from django.forms.widgets import NumberInput
 from .models import WorkShift, Event, Employee
 from datetime import time
-from .models import TestModel
-
-class TestForm(forms.ModelForm):
-    class Meta:
-        model = TestModel
-        fields = ['test_date']
 
 class CustomModelChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):

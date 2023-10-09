@@ -11,7 +11,7 @@
 			<div class="card shadow-card">
 				<div class="card-header">Kontakt</div>
 				<div class="card-body">
-					<table class="table">
+					<table class="table table-striped">
 						<thead>
 							<tr>
 								<th>Imię i Nazwisko</th>
@@ -56,7 +56,7 @@
     <!-- Events -->
     <div class="card mb-4">
         <div class="card-header">Wydarzenia</div>
-        <div class="card-body">
+        <div class="card-body shadow-card">
             <table class="table">
                 <thead>
                     <tr>
@@ -68,7 +68,7 @@
                 </thead>
                 <tbody>
                     {% for event in events %}
-                    <tr class="{% cycle 'table-default' 'table-secondary' %}">
+                    <tr class="{% cycle 'table-secondary' 'table-default' %}">
                         <td><a href="{% url 'events:event_detail' event.id %}">{{ event.name }}</a></td>
                         <td>{{ event.start_time|date:"d.m.Y" }}</td>
                         <td>{{ event.end_time|date:"d.m.Y" }}</td>

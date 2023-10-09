@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block content %}
+
+<style>
+    .btn-custom {
+        width: 100%;
+        margin-bottom: 2px;
+        margin-top: 2px;
+    }
+</style>
+
+<div class="container-fluid mt-5">
+    <div class="row mb-4">
+        <div class="col-md-2 text-left">
+            <button id="prevButton" class="btn btn-outline-dark">Poprzedni</button>
+        </div>
+        <div class="col-md-8 text-center">
+            <form id="mainForm" class="d-flex" method="get">
+                <div class="input-group me-4">
+                    <input type="text" class="form-control shadow-card" name="q" placeholder="Szukaj...">
+                    <button class="btn btn-primary shadow-card" type="button" id="searchButton">Szukaj</button>
+                </div>
+
+                <div class="input-group">
+                    <label for="from_date" class="input-group-text shadow-card">Od:</label>
+                    <input type="date" class="form-control shadow-card" id="from_date">
+                    <button class="btn btn-secondary shadow-card" type="button" id="filterButton">Filtruj</button>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-2 text-right">
+            <button id="nextButton" class="btn btn-outline-dark" style="float: right;">Następny</button>
+        </div>
+    </div>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col">
+                <div id="employeeTable" style="background-color: #fff;">
+                    <!-- Tutaj będzie tabela -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        function generateDateHeaders(start_date, end_date) {
+            let startDate = new Date(start_date);
+            let endDate = new Date(end_date);
+            let headers = '<th class="text-center">Pracownik</th>';
+
+            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                headers += `<th class="text-center">${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}</th>`;
+            }
+
+            return headers;
+        }
+
+        function isEventActiveOnDate(events, date) {
+            const strippedDate = new Date(date);
+            strippedDate.setHours(0, 0, 0, 0);
+
+            return events.some(event => {
+                const startDate = new Date(event.start_time);
+                startDate.setHours(0, 0, 0, 0);
+
+                const endDate = new Date(event.end_time);
+                endDate.setHours(0, 0, 0, 0);
+
+                return strippedDate >= startDate && strippedDate <= endDate;
+            });
+        }
+
+        let startDate = new Date();
+        let endDate = new Date();
+        endDate.setDate(startDate.getDate() + 7);
+
+        function fetchEmployeeAvailability(start_date, end_date, query = null) {
+            let url = `/employee_availability/?start_date=${start_date.toISOString().substring(0, 10)}&end_date=${end_date.toISOString().substring(0, 10)}`;
+            if (query) {
+                url += `&q=${query}`;
+            }
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    let allEvents = data.all_events;
+                    let tableHtml = '<table class="table table-striped table-bordered w-100"><thead class="thead-dark text-center"><tr>';
+                    tableHtml += generateDateHeaders(data.start_date, data.end_date);
+                    tableHtml += '</tr></thead><tbody>';
+
+                    data.employees.forEach(employee => {
+                        tableHtml += `<tr><td class="text-center">${employee.name}</td>`;
+                        let uniqueEventIds = [];
+
+                        for (let date = new Date(data.start_date); date <= new Date(data.end_date); date.setDate(date.getDate() + 1)) {
+                            let cellContent = [];
+                            const work_shifts_on_this_day = employee.work_shifts.filter(shift => new Date(shift.work_date).getTime() === date.getTime());
+
+                            if (work_shifts_on_this_day.length > 0) {
+                                work_shifts_on_this_day.forEach(shift => {
+                                    cellContent.push(`<a href="/${shift.event_id}/"><button class="btn btn-danger btn-custom">${shift.event}</button></a>`);
+                                });
+                            }
+
+                            if (isEventActiveOnDate(employee.events, date)) {
+                                employee.events.forEach(event => {
+                                    if (work_shifts_on_this_day.every(shift => shift.event_id !== event.id) && !uniqueEventIds.includes(event.id)) {
+                                        cellContent.push(`<a href="/${event.id}/"><button class="btn btn-warning btn-custom">${event.name}</button></a>`);
+                                        uniqueEventIds.push(event.id);
+                                    }
+                                });
+                            }
+
+                            if (cellContent.length === 0) {
+                                const eventsOnThisDay = allEvents.filter(event => isEventActiveOnDate([event], date));
+                                if (eventsOnThisDay.length > 0) {
+                                    eventsOnThisDay.forEach(event => {
+                                        cellContent.push(`<a href="/${event.id}/"><button class="btn btn-info btn-custom">${event.name}</button></a>`);
+                                    });
+                                } else {
+                                    cellContent.push(`<button class="btn btn-success btn-custom">Wolne</button>`);
+                                }
+                            }
+
+                            tableHtml += `<td class="text-center">${cellContent.join('')}</td>`;
+                        }
+
+                        tableHtml += `</tr>`;
+                    });
+
+                    tableHtml += '</tbody></table>';
+                    document.getElementById("employeeTable").innerHTML = tableHtml;
+                });
+        }
+
+        function updateURLAndRefreshData() {
+            const currentURL = new URL(window.location.href);
+            const query = document.querySelector("input[name='q']").value;
+            const fromDate = document.getElementById("from_date").value;
+
+            if (query) {
+                currentURL.searchParams.set('q', query);
+            } else {
+                currentURL.searchParams.delete('q');
+            }
+
+            if (fromDate) {
+                currentURL.searchParams.set('from_date', fromDate);
+            } else {
+                currentURL.searchParams.delete('from_date');
+            }
+
+            history.pushState({}, '', currentURL.toString());
+            fetchEmployeeAvailability(startDate, endDate, query);
+        }
+
+        function registerEventListeners() {
+            document.getElementById("prevButton").addEventListener("click", function () {
+                startDate.setDate(startDate.getDate() - 7);
+                endDate.setDate(endDate.getDate() - 7);
+                updateURLAndRefreshData();
+            });
+
+            document.getElementById("nextButton").addEventListener("click", function () {
+                startDate.setDate(startDate.getDate() + 7);
+                endDate.setDate(endDate.getDate() + 7);
+                updateURLAndRefreshData();
+            });
+
+            document.getElementById("searchButton").addEventListener("click", updateURLAndRefreshData);
+
+            const form = document.getElementById("mainForm");
+            form.addEventListener("submit", function (event) {
+                event.preventDefault();
+                updateURLAndRefreshData();
+            });
+
+            document.getElementById("filterButton").addEventListener("click", function () {
+                const selectedDate = new Date(document.getElementById("from_date").value);
+                startDate = selectedDate;
+                endDate = new Date(selectedDate);
+                endDate.setDate(startDate.getDate() + 7);
+                updateURLAndRefreshData();
+            });
+
+            document.getElementById("from_date").addEventListener("keyup", function (event) {
+                if (event.keyCode === 13) {
+                    event.preventDefault();
+                    updateURLAndRefreshData();
+                }
+            });
+        }
+
+        registerEventListeners();
+        fetchEmployeeAvailability(startDate, endDate);
+    });
+</script>
+
+
+{% endblock %}

@@ -6,27 +6,30 @@ from django import template
 from .forms import WorkShiftForm
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse
-from .forms import TestForm
 from collections import defaultdict
 from django.db.models import Q
+from datetime import timedelta
+import logging
 
 register = template.Library()
+logger = logging.getLogger(__name__)
 
 @register.filter(name='get_item')
 def get_item(dictionary, key):
     return dictionary.get(key)
 
-def event_list(request):
-    event_list = Event.objects.all().order_by('-start_time')
 
-    query = request.GET.get('q')
-    if query:
+def event_list(request):
+    event_list = Event.objects.all().order_by('-start_time').select_related("place", "seller")
+
+    user_input = request.GET.get('q')
+    if user_input:
         event_list = event_list.filter(
-            Q(name__icontains=query) |
-            Q(place__name__icontains=query) |
-            Q(place__city__icontains=query) |
-            Q(seller__first_name__icontains=query) |
-            Q(seller__last_name__icontains=query)
+            Q(name__icontains=user_input) |
+            Q(place__name__icontains=user_input) |
+            Q(place__city__icontains=user_input) |
+            Q(seller__first_name__icontains=user_input) |
+            Q(seller__last_name__icontains=user_input)
         )
 
     from_date = request.GET.get('from_date')
@@ -124,9 +127,8 @@ def work_shift(request, event_id, employee_id):
     else:
         form = WorkShiftForm(initial=initial_data, event_id=event_id)
 
-    return render(request, 'events/work_shift.html', {'form': form, 'no_employee': no_employee, 'work_shifts': work_shifts})
-
-
+    return render(request, 'events/work_shift.html',
+                  {'form': form, 'no_employee': no_employee, 'work_shifts': work_shifts})
 
 
 def get_first_employee_for_event(request, event_id):
@@ -145,32 +147,112 @@ def get_work_shifts(request):
     if event_id is None or employee_id is None:
         return JsonResponse({'error': 'Missing parameters'}, status=400)
 
-    work_shifts = WorkShift.objects.filter(event_id=event_id, employee_id=employee_id).order_by('work_date', 'start_time').values('work_date', 'start_time', 'hours')
+    work_shifts = WorkShift.objects.filter(event_id=event_id, employee_id=employee_id).order_by('work_date',
+                                                                                                'start_time').values(
+        'work_date', 'start_time', 'hours')
     return JsonResponse(list(work_shifts), safe=False)
-
-
-
-def test_view(request):
-    if request.method == 'POST':
-        form = TestForm(request.POST)
-        if form.is_valid():
-            form.save()
-    else:
-        form = TestForm(initial={'test_date': '2023-09-28'})  # Ustawiamy wartość początkową
-
-    return render(request, 'test_template.html', {'form': form})
 
 
 def get_event_date_range(request, event_id):
     try:
         event = Event.objects.get(id=event_id)
-        start_date = event.start_time  # Usunięto .date()
-        end_date = event.end_time if event.end_time else None  # Usunięto .date()
+        start_date = event.start_time
+        end_date = event.end_time if event.end_time else None
         return JsonResponse({'start_date': str(start_date), 'end_date': str(end_date)})
     except Event.DoesNotExist:
         return JsonResponse({'error': 'Event not found'}, status=404)
 
 
 
+def employee_availability(request):
+    # Odczytaj daty z parametrów GET lub użyj domyślnych wartości
+    start_date_str = request.GET.get('start_date', None)
+    end_date_str = request.GET.get('end_date', None)
 
+    if start_date_str and end_date_str:
+        start_date = timezone.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = timezone.datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    else:
+        now = timezone.now().date()
+        start_date = now - timedelta(days=10)
+        end_date = now
+
+    query = request.GET.get('q', None)
+
+    base_employee_query = Employee.objects.select_related('department')
+    base_event_query = Event.objects.filter(
+        start_time__lte=end_date,
+        end_time__gte=start_date
+    )
+
+    if query:
+        employees = base_employee_query.filter(
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(department__name__icontains=query) |
+            Q(groups__name__icontains=query)
+        ).distinct()
+
+        all_events = base_event_query.filter(
+            Q(name__icontains=query) |
+            Q(protocol_number__icontains=query) |
+            Q(seller__first_name__icontains=query) |
+            Q(seller__last_name__icontains=query)
+        )
+    else:
+        employees = base_employee_query.all()
+        all_events = base_event_query
+
+    data = []
+
+    for employee in employees:
+        events = Event.objects.filter(
+            assignment__employee=employee,
+            start_time__lte=end_date,
+            end_time__gte=start_date
+        )
+        work_shifts = WorkShift.objects.filter(
+            employee=employee,
+            work_date__range=[start_date, end_date]
+        )
+
+        employee_data = {
+            "id": employee.id,
+            "name": str(employee),
+            "department": str(employee.department) if employee.department else None,
+            "groups": ", ".join([str(group) for group in employee.groups.all()]) if employee.groups.exists() else None,
+            "events": [
+                {
+                    "id": event.id,
+                    "name": event.name,
+                    "start_time": event.start_time,
+                    "end_time": event.end_time,
+                }
+                for event in events
+            ],
+            "work_shifts": [
+                {
+                    "id": work_shift.id,
+                    "event_id": work_shift.event.id,
+                    "event": str(work_shift.event.name),
+                    "work_date": work_shift.work_date,
+                    "start_time": work_shift.start_time,
+                    "hours": work_shift.hours,
+                }
+                for work_shift in work_shifts
+            ],
+        }
+        data.append(employee_data)
+
+    return JsonResponse({
+        "employees": data,
+        "start_date": start_date,
+        "end_date": end_date,
+        "all_events": [{"id": event.id, "name": event.name, "start_time": event.start_time, "end_time": event.end_time}
+                       for event in all_events],
+    })
+
+
+def employee_availability_table(request):
+    return render(request, 'employee_availability.html')
 
